@@ -19,6 +19,9 @@
 
   <style type="text/css">
     /* TODO(Christof): styling ??  */
+    #result.error{
+    	color:red;
+    }
   </style>
 
   <meta name="theme-color" content="#fafafa">
@@ -28,15 +31,15 @@
 	<label>
 		Difference:
 		<select id=diff>
-			<option value="s">Days</option>
-			<option value="m">Weekdays</option>
-			<option value="h">Complete Weeks</option>
+			<option value="Days">Days</option>
+			<option value="Weekdays">Weekdays</option>
+			<option value="CompleteWeeks">Complete Weeks</option>
 		</select>
 	</label>
 	<br>
 	<br>
 	<label>Date 1 <input id=date1 type=date></label>
-	<label>TimeZone <input id=tz1 type=text></label>
+	<label>TimeZone (empty for server default) <input id=tz1 type=text></label>
 	<br>
 
 	<br>
@@ -44,7 +47,7 @@
 
 	
 	<label>Date 2 <input id=date2 type=date> </label>
-	<label>TimeZone <input id=tz2 type=text> </label>
+	<label>TimeZone (empty for server default) <input id=tz2 type=text> </label>
 	<br>
 
 	<br>
@@ -63,16 +66,49 @@
 		<legend>
 			Result
 		</legend>
-		
+		<div id=result>
+
+		</div>
 	</fieldset>
   <script>
     //TODO(Christof): write some code to make use of the api
     function CallAPI()
     {
+    	//NOTE(Christof): because HTML5 spec (or more accurately existing browser behaviour defined to be the HTML5 spec), we can now rely on ID'd elements existing on both document and window and since in this context the global is also window, we can just use the IDs as variables
+    	// isn't that fun!
+    	let url = `api.php?operation=${diff.value}&date1=${date1.value}&date2=${date2.value}`;
 
+    	if(convert.checked)
+    	{
+    		url += `&convert=${conversion.value}`
+    	}
+
+    	if(tz1.value)
+    	{
+    		url += `&timezone1=${tz1.value}`
+    	}
+
+
+    	if(tz2.value)
+    	{
+    		url += `&timezone2=${tz2.value}`
+    	}
+
+    	let ok = true;
+    	fetch(url).then(response => {
+    			ok = response.ok;
+    			return response.text();
+    		}
+    		).then(data => {
+	    		result.innerText = data
+	    		result.className = ok?"":"error";
+	    	})
+	    	
 
     }
   </script>
+
+  
 </body>
 
 </html>
