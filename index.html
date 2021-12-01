@@ -1,1 +1,78 @@
 
+<!doctype html>
+<html class="no-js" lang="">
+
+<head>
+  <meta charset="utf-8">
+  <title> Datetime API test/input? </title>
+  <meta name="description" content="">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <meta property="og:title" content="">
+  <meta property="og:type" content="">
+  <meta property="og:url" content="">
+  <meta property="og:image" content="">
+
+  <link rel="manifest" href="site.webmanifest">
+  <link rel="apple-touch-icon" href="icon.png">
+  <!-- Place favicon.ico in the root directory -->
+
+  <style type="text/css">
+    /* TODO(Christof): styling ??  */
+  </style>
+
+  <meta name="theme-color" content="#fafafa">
+</head>
+
+<body>
+	<label>
+		Difference:
+		<select id=diff>
+			<option value="s">Days</option>
+			<option value="m">Weekdays</option>
+			<option value="h">Complete Weeks</option>
+		</select>
+	</label>
+	<br>
+	<br>
+	<label>Date 1 <input id=date1 type=date></label>
+	<label>TimeZone <input id=tz1 type=text></label>
+	<br>
+
+	<br>
+
+
+	
+	<label>Date 2 <input id=date2 type=date> </label>
+	<label>TimeZone <input id=tz2 type=text> </label>
+	<br>
+
+	<br>
+	<label><input type=checkbox id=convert> Convert to:</label>
+	<select id=conversion>
+		<option value="s">Seconds</option>
+		<option value="m">minutes</option>
+		<option value="h">hours</option>
+		<option value="y">years</option>
+	</select>
+	<br>
+	<br>
+	<button onclick="CallAPI(); return false;">API!</button>
+
+	<fieldset>
+		<legend>
+			Result
+		</legend>
+		
+	</fieldset>
+  <script>
+    //TODO(Christof): write some code to make use of the api
+    function CallAPI()
+    {
+
+
+    }
+  </script>
+</body>
+
+</html>
