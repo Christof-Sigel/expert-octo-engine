@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html class="no-js" lang="">
 
@@ -38,7 +37,7 @@
 	</label>
 	<br>
 	<br>
-	<label>Date 1 <input id=date1 type=date></label>
+	<label>Date 1 <input id=date1 type=datetime-local></label>
 	<label>TimeZone (empty for server default) <input id=tz1 type=text></label>
 	<br>
 
@@ -46,17 +45,17 @@
 
 
 	
-	<label>Date 2 <input id=date2 type=date> </label>
+	<label>Date 2 <input id=date2 type=datetime-local> </label>
 	<label>TimeZone (empty for server default) <input id=tz2 type=text> </label>
 	<br>
 
 	<br>
 	<label><input type=checkbox id=convert> Convert to:</label>
 	<select id=conversion>
-		<option value="s">Seconds</option>
-		<option value="m">minutes</option>
-		<option value="h">hours</option>
-		<option value="y">years</option>
+		<option value="seconds">Seconds</option>
+		<option value="minutes">minutes</option>
+		<option value="hours">hours</option>
+		<option value="years">years</option>
 	</select>
 	<br>
 	<br>
@@ -71,11 +70,9 @@
 		</div>
 	</fieldset>
   <script>
-    //TODO(Christof): write some code to make use of the api
     function CallAPI()
     {
-    	//NOTE(Christof): because HTML5 spec (or more accurately existing browser behaviour defined to be the HTML5 spec), we can now rely on ID'd elements existing on both document and window and since in this context the global is also window, we can just use the IDs as variables
-    	// isn't that fun!
+    	//NOTE(Christof): because HTML5 spec (or more accurately existing browser behaviour *NOW* defined to be the HTML5 spec), we can now rely on ID'd elements existing on both document and window and since in this context the global is also window, we can just use the IDs as variables. Isn't that fun!
     	let url = `api.php?operation=${diff.value}&date1=${date1.value}&date2=${date2.value}`;
 
     	if(convert.checked)
@@ -103,12 +100,10 @@
 	    		result.innerText = data
 	    		result.className = ok?"":"error";
 	    	})
-	    	
-
     }
   </script>
 
-  
+
 </body>
 
 </html>
