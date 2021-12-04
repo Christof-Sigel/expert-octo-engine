@@ -1,14 +1,14 @@
 # expert-octo-engine
 
-###Why the name? 
+### Why the name? 
 Well, it was github's suggestion and I liked it, so why not?
 
-##Instructions for running
+## Instructions for running
 Put the files in a directory served by a web-server that supports php.
 
 index.html has a convenience page for running requests against the api.
 
-##API Docs
+## API Docs
 
 Arguments are passed in Get parameters to api.php.
 
