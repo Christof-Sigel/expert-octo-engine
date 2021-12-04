@@ -101,6 +101,93 @@
 	    		result.className = ok?"":"error";
 	    	})
     }
+
+
+
+
+
+
+    //NOTE(Christof): this technically count as tests, right?
+    function TestParameters(params, expected_result, test_name)
+    {
+    	let url = "api.php";
+
+    	let url_params = "";
+
+    	for(let p in params){
+	        if(params.hasOwnProperty(p)){
+	            url_params +=  `${p}=${params[p]}&`
+	        }
+	    }
+
+	    url_params = url_params.replace(/&$/,"")
+
+	    if(url_params)
+	    {
+	    	url += `?${url_params}`;
+	    }
+
+    	
+    	let failed = false;
+    	fetch(url).then(response => {
+    			failed = !response.ok;
+    			return response.text();
+    		}
+    		).then(data => {
+    			if(! (data == expected_result.data && failed == expected_result.failed ) )
+    			{
+    				console.error("Test", test_name,"failed");
+    				console.error("got", {data, failed}, "expected",expected_result);
+    			}
+	    	})
+    }
+
+   TestParameters({}, {data:"Parameters 'date1', 'date2' and 'operation' are required", failed:true}, "Empty parameters");
+
+   TestParameters({date1:""}, {data:"Parameters 'date1', 'date2' and 'operation' are required", failed:true}, "Missing parameters");
+   TestParameters({date1:"",date2:""}, {data:"Parameters 'date1', 'date2' and 'operation' are required", failed:true}, "Missing parameters");
+   TestParameters({date1:"",date2:"",operation:""}, {data:"Please supply a valid datetime1", failed:true}, "Missing date1");
+   TestParameters({date1:"2021-10-10T10:10",date2:"",operation:""}, {data:"Please supply a valid datetime2", failed:true}, "Missing date2");
+   TestParameters({date1:"2021-10-10T10:10",date2:"2021-10-10T10:10",operation:""}, {data:"Please try a valid operation", failed:true}, "Missing operation");
+   TestParameters({date1:"2021-10-10T10:10",date2:"2021-10-10T10:10",operation:"WUZZA"}, {data:"Please try a valid operation", failed:true}, "Invalid operation");
+
+
+   TestParameters({date1:"2021-10-10T10:10",date2:"2021-10-10T10:10",operation:"Days"}, {data:0, failed:false}, "Equal Days");
+   TestParameters({date1:"2021-10-10T10:10",date2:"2021-10-10T10:11",operation:"Days"}, {data:1, failed:false}, "1 Day");
+   TestParameters({date1:"2021-10-10T10:10",date2:"2021-10-11T10:10",operation:"Days"}, {data:2, failed:false}, "2 Days");
+   TestParameters({date1:"2021-10-11T10:10",date2:"2021-10-10T10:10",operation:"Days"}, {data:2, failed:false}, "reversed 2 Days");
+   TestParameters({date1:"2021-10-11T10:10",date2:"2021-10-10T10:10",operation:"Days", convert:"hours"}, {data:48, failed:false}, "2 Days in hours");
+   TestParameters({date1:"2021-10-11T10:10",date2:"2021-10-10T10:10",operation:"Days", convert:"minutes"}, {data:48 *60, failed:false}, "2 Days in minutes");
+   TestParameters({date1:"2021-10-11T10:10",date2:"2021-10-10T10:10",operation:"Days", convert:"seconds"}, {data:48 *60 *60, failed:false}, "2 Days in seconds");
+   TestParameters({date1:"2021-10-11T10:10",date2:"2021-10-10T10:10",operation:"Days", convert:"years"}, {data: (2/365.242199).toFixed(16), failed:false}, "2 Days in 'years'");
+
+   TestParameters({date1:"2021-10-10T10:10",date2:"2021-10-17T10:10",operation:"Days"}, {data: 8, failed:false}, "1 week in days");
+   // 2021-10-10 is a Sunday, so this is in fact correct
+   TestParameters({date1:"2021-10-10T10:10",date2:"2021-10-17T10:10",operation:"Weekdays"}, {data: 5, failed:false}, "1 week in weekdays");
+   TestParameters({date1:"2021-10-10T10:10",date2:"2021-10-17T10:10",operation:"CompleteWeeks"}, {data: 1, failed:false}, "1 week");
+   TestParameters({date1:"2021-10-12T10:10",date2:"2021-10-23T10:10",operation:"CompleteWeeks"}, {data: 0, failed:false}, "Not a complete week");
+
+
+   TestParameters({date1:"2021-10-10T10:10",date2:"2021-10-17T10:10",operation:"CompleteWeeks", convert:"hours"}, {data: 1 *  7 * 24, failed:false}, "1 week in hours");
+   TestParameters({date1:"2021-10-10T10:10",date2:"2021-10-17T10:10",operation:"CompleteWeeks", convert:"minutes"}, {data: 1 * 7 * 24 * 60, failed:false}, "1 week in minutes");
+   TestParameters({date1:"2021-10-10T10:10",date2:"2021-10-17T10:10",operation:"CompleteWeeks", convert:"seconds"}, {data: 1 * 7 * 24 * 60 * 60, failed:false}, "1 week in seconds");
+   TestParameters({date1:"2021-10-10T10:10",date2:"2021-10-17T10:10",operation:"CompleteWeeks", convert:"years"}, {data: (7/365.242199).toFixed(15), failed:false}, "1 week in 'years'");
+
+
+
+
+   TestParameters({date1:"2021-10-10T10:10",date2:"2022-10-10T10:10",operation:"Days", convert:"years"}, {data: (366/365.242199).toFixed(13), failed:false}, "1 year in 'years'");
+
+
+
+   TestParameters({date1:"2021-10-10T10:10",date2:"2021-10-11T10:10",operation:"Days", timezone1:"WUZZA"}, {data: "Please supply a valid timezone for datetime1", failed:true}, "Invalid timezone 1");
+   TestParameters({date1:"2021-10-10T10:10",date2:"2021-10-11T10:10",operation:"Days", timezone2:"WUZZA"}, {data: "Please supply a valid timezone for datetime2", failed:true}, "Invalid timezone 2");
+
+
+   //NOTE(Christof): shifting date2 from UTC to Adelaide moves it by +10:30 (since 10-11 is in DST) and so 10-11 becomes 10-12, thus adding another (partial) day
+   TestParameters({date1:"2021-10-10T10:10",date2:"2021-10-11T16:10",operation:"Days", timezone1:"Australia/Adelaide", timezone2:"UTC"}, {data: 3, failed:false}, "Timezone 1");
+   //NOTE(Christof): shifting date2 from Adelaide to UTC moves it by -10:30 (since 10-11 is in DST) and so 10-11 becomes 10-10, thus removing a (partial) day
+   TestParameters({date1:"2021-10-10T10:10",date2:"2021-10-11T8:10",operation:"Days", timezone1:"UTC" , timezone2:"Australia/Adelaide"}, {data: 1, failed:false}, "Timezones 2");
   </script>
 
 

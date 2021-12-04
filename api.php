@@ -1,5 +1,9 @@
 <?php 
 
+
+#NOTE(Christof): timezone_open generates a warning if you pass an invalid timezone, which honestly should be covered by the exceptions it throws and the possibile false return value, but what do I know?
+error_reporting(E_ERROR | E_PARSE);
+
 if(!isset($_GET['date1']) || !isset($_GET['date2']) || !isset($_GET['operation']))
 {
 	http_response_code(400);
@@ -54,13 +58,13 @@ if(isset($_GET['timezone2']))
 
 	if($thing)
 	{
-		$timezone1 = $thing;
-		$timezone1_name = $_GET['timezone2'];
+		$timezone2 = $thing;
+		$timezone2_name = $_GET['timezone2'];
 	}
 	else 
 	{
 		http_response_code(400);
-		die("Please supply a valid timezone for datetime1");
+		die("Please supply a valid timezone for datetime2");
 	}
 }
 
