@@ -1,16 +1,19 @@
 <?php 
 
-require 'carbon/autoload.php';
+if(!isset($_GET['date1']) || !isset($_GET['date2']) || !isset($_GET['operation']))
+{
+	http_response_code(400);
+	die("Parameters 'date1', 'date2' and 'operation' are required");
+}
 
-use Carbon\Carbon;
-use Carbon\CarbonInterval;
-use Carbon\CarbonTimeZone;
-use Carbon\Exceptions\InvalidFormatException;
-use Carbon\Exceptions\InvalidTimeZoneException;
+$default_timezone_name = date_default_timezone_get();
+
+$default_timezone = timezone_open($default_timezone_name);
+
+$timezone1 = $timezone2 = $default_timezone;
+$timezone1_name = $timezone2_name = $default_timezone_name;
 
 
-$date1 = Carbon::create($_GET['date1']);
-$date2 = Carbon::create($_GET['date2']);
 
 
 #TODO(Christof): we could do something like keep track of all the issues and output all of them at the end, which might be useful, but doesn't seem worth the effort?
@@ -18,16 +21,17 @@ if(isset($_GET['timezone1']))
 {
 	try
 	{
-		$thing = CarbonTimeZone::create($_GET['timezone1']);
+		$thing = timezone_open($_GET['timezone1']);
 	} 
-	catch(InvalidFormatException|InvalidTimeZoneException $e)
+	catch(Exception $e)
 	{	
 		$thing = false;
 	}
 
 	if($thing)
 	{
-		$date1->SetTimeZone($thing);	
+		$timezone1 = $thing;
+		$timezone1_name = $_GET['timezone1'];
 	}
 	else 
 	{
@@ -41,48 +45,127 @@ if(isset($_GET['timezone2']))
 {
 	try
 	{
-		$thing = CarbonTimeZone::create($_GET['timezone2']);
+		$thing = timezone_open($_GET['timezone2']);
 	} 
-	catch(InvalidFormatException|InvalidTimeZoneException $e)
+	catch(Exception $e)
 	{	
 		$thing = false;
 	}
 
 	if($thing)
 	{
-		$date1->SetTimeZone($thing);	
+		$timezone1 = $thing;
+		$timezone1_name = $_GET['timezone2'];
 	}
 	else 
 	{
 		http_response_code(400);
-		die("Please supply a valid timezone for datetime2");
+		die("Please supply a valid timezone for datetime1");
 	}
 }
 
+
+define("DATETIME_FORMAT", "Y-m-d\\TG:i");
+$date1 = date_create_from_format(DATETIME_FORMAT, $_GET['date1'], $timezone1);
+
+if(!$date1)
+{
+	http_response_code(400);
+	die("Please supply a valid datetime1");
+}
+
+$date2 = date_create_from_format(DATETIME_FORMAT, $_GET['date2'], $timezone2);
+if(!$date2)
+{
+	http_response_code(400);
+	die("Please supply a valid datetime2");
+}
+
+
+#NOTE(Christof): convert date2 to be in date1's timezone
+if($timezone1_name != $timezone2_name)
+{
+	$date2->setTimezone($timezone1);
+}
+
+
+#NOTE(Christof): so that the following operations don't have to worry about what order the input dates are in, switch them around here if date2 is before date1
+if($date2 < $date1)
+{
+	$temp = $date2;
+	$date2 = $date1;
+	$date1 = $temp;
+}
+
+
 $result = 0;
 $resultType = 'days';
-switch ($_GET['operation']) {
+#NOTE(Christof): do the simple, dumb thing that vaguely makes sense (although this is sufficiently bad it should probably change?)
+switch ($_GET['operation']) 
+{
 	case 'Days':
-		$result = $date2->diffInDays($date1);
+		if($date1 < $date2)
+		{
+			$date1->setTime(0,0);
+			while($date1 < $date2)
+			{
+				$result++;
+				$date1->modify('+1 day');
+			}
+		}
 		break;
 
 	case 'Weekdays':
-		#NOTE(Christof): for some bizzare reason, Carbon appears to be off by 1 if you use weekdays? e.g. Fri->Fri is 7 days, but 6 weekdays, yet if you hang on another full week the numbers increase correctly (to 14 and 11 respectively), but since the WeekendDays work correctly we can kinda just implement the correct behaviour ourselves? This is giving me serious throw the library out and just write the shit ourselves vibes, so might just end up doing that.
-		$result = $date2->diffInDays($date1) - $date2->diffInWeekendDays($date1);
+		if($date1 < $date2)
+		{
+			$date1->setTime(0,0);
+			while($date1 < $date2)
+			{
+				if($date1->format("N") == 6 ||$date1->format("N") == 7 )
+				{
+					#NOTE(Christof): do not increment if we're on the weekend!
+				}
+				else 
+				{
+					$result++;
+				}
+				$date1->modify('+1 day');
+			}
+		}
 		break;
 
 	case 'CompleteWeeks':
-		$result = $date2->diffInWeeks($date1);
+		if($date1 < $date2)
+		{
+			$date1->setTime(0,0);
+			#NOTE(Christof): forward to the first Monday and then count the number of Sundays, this gets us the number of full weeks (Monday->Sunday sequences)
+			while($date1 < $date2)
+			{
+				if($date1->format("N") == 1 )
+				{
+					break;
+				}
+				$date1->modify('+1 day');
+			}
+			while($date1 < $date2)
+			{
+				if($date1->format("N") == 7 )
+				{
+					$result++;
+				}
+				$date1->modify('+1 day');
+			}
+		}
 		$resultType = 'weeks';
 		break;
 	
 	default:
-		# code...
-		break;
+		http_response_code(400);
+		die("Please try a valid operation");
 }
 
 
-#NOTE(Christof): since we're converting the above value and not doing a different kind of diff here, we're not accounting for things like DST, leapseconds and leapyears and just using somewhat arbitrary definitions of what for example a year means exactly
+#NOTE(Christof): since we're converting the above value and not doing a different kind of diff here, we're not accounting for things like DST, leapseconds and leapyears and using a somewhat arbitrary definition of what a year means exactly
 define("DAYS_IN_YEAR", 365.242199);
 define("WEEKS_IN_YEAR", DAYS_IN_YEAR / 7);
 define("HOURS_IN_DAY", 24);
@@ -144,22 +227,13 @@ if(isset($_GET['convert']))
 			break;
 
 		default:
-			# code...
-			break;
+			http_response_code(400);
+			die("Please try a valid conversion");
 	}
 }
 
 
 
 echo $result;
-
-
-/*http_response_code(400);
-die("There was an error");
-
-printf("Now: %s", Carbon::now());
-
-printf("1 day: %s", CarbonInterval::day()->forHumans());*/
-
 
 
