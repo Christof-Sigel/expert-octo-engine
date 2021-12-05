@@ -16,7 +16,7 @@ Arguments are passed in Get parameters to api.php.
 
 The api supports three different operations, in the **operation** required parameter:
 
-1. **Days** : returns the number of full days between **date1** and **date2** (including **date1** and **date2**), where partial days are counted as a full day.
+1. **Days** : returns the number of full days between **date1** and **date2** (including **date1** and **date2**), while any part days are rounded up to count as a full day.
 2. **Weekdays**: as 1. but any Saturdays or Sundays in the range are not counted.
 3. **CompleteWeeks**: returns the number of complete weeks (Mondays->Sundays) that occur between the two supplied datetimes. E.g. Wednesday -> Thursday a week later is counted as 0 weeks (since there is no complete sequence of days starting at a Monday and ending on a Sunday in that range).
 
