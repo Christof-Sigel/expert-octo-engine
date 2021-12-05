@@ -102,62 +102,208 @@ if($date2 < $date1)
 }
 
 
+define("USE_FASTER_PATH",true);
+
+function CalculateNumberOfDaysBetweenDates(DateTime $date1, DateTime $date2): int
+{
+	if($date1 == $date2)
+	{
+		return 0;
+	}
+	$result = 1;
+
+	$day1 = intval($date1->format("j"));
+	$month1 = intval($date1->format("n"));
+	$year1 = intval($date1->format("Y"));
+
+
+	$day2 = intval($date2->format("j"));
+	$month2 = intval($date2->format("n"));
+	$year2 = intval($date2->format("Y"));
+
+
+	$result += $day2 - $day1;
+
+	while($month1 != $month2)
+	{
+		if($month1 == 2)
+		{
+			$result += ($year1 %4 == 0 && ( $year1 % 400 == 0 || $year1 %100 !=0))?29:28;
+		}
+		elseif ($month1 == 1
+				|| $month1 == 3
+				|| $month1 == 5
+				|| $month1 == 7
+				|| $month1 == 8
+				|| $month1 == 10
+				|| $month1 == 12) 
+		{
+			$result += 31;
+		}
+		else
+		{
+			$result += 30;
+		}
+		$month1 += 1;
+		if($month1 > 12)
+		{
+			$month1 -=12;
+			$year1++;
+		}
+	}
+
+	while($year1 < $year2)
+	{
+		$test_year = $year1;
+		if($month1 > 2)
+		{
+			$test_year++;
+		}
+		$result += ($test_year %4 == 0 && ( $test_year % 400 == 0 || $test_year %100 !=0))?366:365;
+		$year1++;
+	}
+
+	return $result;
+}
+
 $result = 0;
 $resultType = 'days';
 #NOTE(Christof): do the simple, dumb thing that vaguely makes sense (although this is sufficiently bad it should probably change?)
 switch ($_GET['operation']) 
 {
 	case 'Days':
-		if($date1 < $date2)
+		if(!USE_FASTER_PATH)
 		{
-			$date1->setTime(0,0);
-			while($date1 < $date2)
+			if($date1 < $date2)
 			{
-				$result++;
-				$date1->modify('+1 day');
+				$date1->setTime(0,0);
+				while($date1 < $date2)
+				{
+					$result++;
+					$date1->modify('+1 day');
+				}
 			}
+		}
+		else
+		{
+			$result = CalculateNumberOfDaysBetweenDates($date1, $date2);
 		}
 		break;
 
 	case 'Weekdays':
-		if($date1 < $date2)
+		if(!USE_FASTER_PATH)
 		{
-			$date1->setTime(0,0);
-			while($date1 < $date2)
+			if($date1 < $date2)
 			{
-				if($date1->format("N") == 6 ||$date1->format("N") == 7 )
+				$date1->setTime(0,0);
+				while($date1 < $date2)
 				{
-					#NOTE(Christof): do not increment if we're on the weekend!
+					if($date1->format("N") == 6 ||$date1->format("N") == 7 )
+					{
+						#NOTE(Christof): do not increment if we're on the weekend!
+					}
+					else 
+					{
+						$result++;
+					}
+					$date1->modify('+1 day');
 				}
-				else 
-				{
-					$result++;
-				}
-				$date1->modify('+1 day');
+			}
+		}
+		else
+		{
+			if($date1>=$date2)
+			{
+				break;
+			}
+			$result = CalculateNumberOfDaysBetweenDates($date1, $date2);
+
+
+			$NumDays = $result;
+			$day_of_week1 = intval($date1->format("N"));
+			$day_of_week2 = intval($date2->format("N"));
+
+			//NOTE(Christof): this turns the number of days into some multiple of weeks, 
+			$NumDays -= (8 - $day_of_week1);
+			$NumDays -= $day_of_week2;
+
+			$NumWeeks = $NumDays / 7;
+			$result -=  $NumWeeks *2;
+
+			if($day_of_week1 ==7)
+			{
+				$result--;
+			}
+			else
+			{
+				$result -= 2;
+			}
+
+			if($day_of_week2 ==7)
+			{
+				$result -=2;
+			}
+			elseif($day_of_week2 == 6)
+			{
+				$result--;
 			}
 		}
 		break;
 
 	case 'CompleteWeeks':
-		if($date1 < $date2)
+		if(!USE_FASTER_PATH)
 		{
-			$date1->setTime(0,0);
-			#NOTE(Christof): forward to the first Monday and then count the number of Sundays, this gets us the number of full weeks (Monday->Sunday sequences)
-			while($date1 < $date2)
+			if($date1 < $date2)
 			{
-				if($date1->format("N") == 1 )
+				$date1->setTime(0,0);
+				#NOTE(Christof): forward to the first Monday and then count the number of Sundays, this gets us the number of full weeks (Monday->Sunday sequences)
+				while($date1 < $date2)
 				{
-					break;
+					if($date1->format("N") == 1 )
+					{
+						break;
+					}
+					$date1->modify('+1 day');
 				}
-				$date1->modify('+1 day');
+				while($date1 < $date2)
+				{
+					if($date1->format("N") == 7 )
+					{
+						$result++;
+					}
+					$date1->modify('+1 day');
+				}
 			}
-			while($date1 < $date2)
+		}
+		else 
+		{
+			if($date1>=$date2)
 			{
-				if($date1->format("N") == 7 )
-				{
-					$result++;
-				}
-				$date1->modify('+1 day');
+				break;
+			}
+			$NumDays = CalculateNumberOfDaysBetweenDates($date1, $date2);
+
+
+			
+			$day_of_week1 = intval($date1->format("N"));
+			$day_of_week2 = intval($date2->format("N"));
+
+			//NOTE(Christof): this turns the number of days into some multiple of weeks, 
+			if($day_of_week1 != 1)
+			{
+				$NumDays -= (8 - $day_of_week1);
+			}
+			if($day_of_week2 != 7)
+			{
+				$NumDays -= $day_of_week2;
+			}
+
+			$NumWeeks = $NumDays / 7;
+
+			$result = $NumWeeks;
+			if($result < 0)
+			{
+				$result = 0;
 			}
 		}
 		$resultType = 'weeks';

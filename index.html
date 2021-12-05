@@ -167,6 +167,13 @@
    TestParameters({date1:"2021-10-10T10:10",date2:"2021-10-17T10:10",operation:"CompleteWeeks"}, {data: 1, failed:false}, "1 week");
    TestParameters({date1:"2021-10-12T10:10",date2:"2021-10-23T10:10",operation:"CompleteWeeks"}, {data: 0, failed:false}, "Not a complete week");
 
+   
+   TestParameters({date1:"2021-10-12T10:10",date2:"2022-10-12T10:10",operation:"Days"}, {data: 366, failed:false}, "a year in days");
+   TestParameters({date1:"2019-10-12T10:10",date2:"2020-10-12T10:10",operation:"Days"}, {data: 367, failed:false}, "a year in days (with leap year)");
+
+   TestParameters({date1:"2019-10-12T10:10",date2:"2220-10-12T10:10",operation:"Days"}, {data: 73415, failed:false}, "a bunch of years in days");
+
+
 
    TestParameters({date1:"2021-10-10T10:10",date2:"2021-10-17T10:10",operation:"CompleteWeeks", convert:"hours"}, {data: 1 *  7 * 24, failed:false}, "1 week in hours");
    TestParameters({date1:"2021-10-10T10:10",date2:"2021-10-17T10:10",operation:"CompleteWeeks", convert:"minutes"}, {data: 1 * 7 * 24 * 60, failed:false}, "1 week in minutes");
